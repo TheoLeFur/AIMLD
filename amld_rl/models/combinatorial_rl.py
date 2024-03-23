@@ -30,10 +30,12 @@ class GraphEmbedding(nn.Module):
 
         self.device: str = device
         self.embedding_size: int = embedding_size
-        self.embedding: nn.Parameter = nn.Parameter(torch.FloatTensor(input_size, embedding_size)).to(self.device)
+        self.embedding: nn.Parameter = nn.Parameter(
+            torch.FloatTensor(input_size, embedding_size)).to(self.device)
 
         # Weights initialization
-        self.embedding.data.uniform_(-(1. / math.sqrt(embedding_size)), 1. / math.sqrt(embedding_size))
+        self.embedding.data.uniform_(-(1. / math.sqrt(embedding_size)),
+                                     1. / math.sqrt(embedding_size))
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """
@@ -63,7 +65,8 @@ class AttentionModule(nn.Module):
             hidden_dim: int,
             use_tanh: Optional[bool] = False,
             C: Optional[int] = 10,
-            device: Optional[str] = "cpu"
+            device: Optional[str] = "cpu",
+            attention: Optional[str] = "D"
     ) -> None:
         """
 
@@ -93,15 +96,17 @@ class AttentionModule(nn.Module):
         self.C = C
 
         self.device = device
+        self.attention = attention
 
         # Query and ref projections
         self.Wq = nn.Linear(hidden_dim, hidden_dim)
-        self.Wr = nn.Conv1d(hidden_dim, hidden_dim, kernel_size=1, stride=1)
+        self.Wr = nn.Conv1d(hidden_dim, hidden_dim, 1, 1)
         value: torch.Tensor = torch.FloatTensor(self.hidden_dim)
         self.value = nn.Parameter(value).to(self.device)
 
         # Weights initialization
-        self.value.data.uniform_(-(1. / math.sqrt(hidden_dim)), 1. / math.sqrt(hidden_dim))
+        self.value.data.uniform_(-(1. / math.sqrt(hidden_dim)),
+                                 1. / math.sqrt(hidden_dim))
 
     def forward(self, query: torch.Tensor, ref: torch.Tensor):
         """
@@ -113,15 +118,23 @@ class AttentionModule(nn.Module):
         batch_size: int = ref.size(0)
         seq_len: int = ref.size(1)
 
-        ref = ref.permute(0, 2, 1)
+        if self.attention == "BHD":
+            ref = ref.permute(0, 2, 1)
+            query: torch.Tensor = self.Wq(query).unsqueeze(2)
+            ref: torch.Tensor = self.Wr(ref)
 
-        query: torch.Tensor = self.Wq(query).unsqueeze(2)
-        ref: torch.Tensor = self.Wr(ref)
+            query = query.repeat(1, 1, seq_len)
+            value: torch.Tensor = self.value.unsqueeze(
+                0).unsqueeze(0).repeat(batch_size, 1, 1)
 
-        query = query.repeat(1, 1, seq_len)
-        value: torch.Tensor = self.value.unsqueeze(0).unsqueeze(0).repeat(batch_size, 1, 1)
-
-        logits: torch.Tensor = torch.bmm(value, self.tanh(query + ref)).squeeze(1)
+            logits: torch.Tensor = torch.bmm(
+                value, self.tanh(query + ref)).squeeze(1)
+        elif self.attention == "D":
+            query = query.unsqueeze(2)
+            logits = torch.bmm(ref, query).squeeze(2)
+            ref = ref.permute(0, 2, 1)
+        else:
+            raise NotImplementedError
 
         if self.use_tanh:
             # Optional exploration
@@ -138,6 +151,7 @@ class PointerNet(nn.Module):
                  n_glimpses: int,
                  tanh_exploration: Optional[int] = None,
                  use_tanh: Optional[bool] = False,
+                 attention: Optional[str] = "D",
                  device: Optional[str] = "cpu") -> None:
         """
 
@@ -177,18 +191,23 @@ class PointerNet(nn.Module):
             hidden_dim=self.hidden_dim,
             use_tanh=use_tanh,
             C=tanh_exploration,
-            device=self.device)
+            device=self.device,
+            attention=attention
+        )
 
         self.glimpse = AttentionModule(
             hidden_dim=self.hidden_dim,
             use_tanh=False,
-            device=self.device
+            device=self.device,
+            attention=attention
         )
 
         self.softmax = nn.Softmax()
 
-        self.decoder_start_input = nn.Parameter(torch.FloatTensor(embedding_size)).to(self.device)
-        self.decoder_start_input.data.uniform_(-(1. / math.sqrt(embedding_size)), 1. / math.sqrt(embedding_size))
+        self.decoder_start_input = nn.Parameter(
+            torch.FloatTensor(embedding_size)).to(self.device)
+        self.decoder_start_input.data.uniform_(
+            -(1. / math.sqrt(embedding_size)), 1. / math.sqrt(embedding_size))
 
     def _mask_logits(
             self,
@@ -215,7 +234,6 @@ class PointerNet(nn.Module):
         return logits, clone_mask
 
     def forward(self, inputs: torch.Tensor) -> Tuple[List, List]:
-
         """
         Forward Pass through pointer network
         @param inputs: tensor of shape [BATCH_SIZE, 1, SEQ_LEN]
@@ -235,20 +253,24 @@ class PointerNet(nn.Module):
         prev_probs: List = []
         prev_idxs: List = []
 
-        mask: torch.Tensor = torch.zeros(batch_size, seq_len, device=self.device).to(torch.bool)
+        mask: torch.Tensor = torch.zeros(
+            batch_size, seq_len, device=self.device).to(torch.bool)
         mask.requires_grad = False
 
         idxs = None
-        decoder_input = self.decoder_start_input.unsqueeze(0).repeat(batch_size, 1)
+        decoder_input = self.decoder_start_input.unsqueeze(
+            0).repeat(batch_size, 1)
 
         for _ in range(seq_len):
 
-            _, (hidden, context) = self.decoder(decoder_input.unsqueeze(1), (hidden, context))
+            _, (hidden, context) = self.decoder(
+                decoder_input.unsqueeze(1), (hidden, context))
             query = hidden.squeeze(0)
             for _ in range(self.n_glimpses):
                 ref, logits = self.glimpse(query, encoder_outputs)
                 logits, mask = self._mask_logits(logits, mask, idxs)
-                query = torch.bmm(ref, self.softmax(logits).unsqueeze(2)).squeeze(2)
+                query = torch.bmm(ref, self.softmax(
+                    logits).unsqueeze(2)).squeeze(2)
 
             _, logits = self.pointer(query, encoder_outputs)
             logits, mask = self._mask_logits(logits, mask, idxs)
@@ -260,7 +282,8 @@ class PointerNet(nn.Module):
                     idxs = probs.multinomial(1).squeeze(1)
                     break
 
-            decoder_input = embedded[[i for i in range(batch_size)], idxs.data, :]
+            decoder_input = embedded[[
+                i for i in range(batch_size)], idxs.data, :]
             prev_probs.append(probs)
             prev_idxs.append(idxs)
 
@@ -276,9 +299,9 @@ class CombinatorialRL(nn.Module):
                  reward: Callable,
                  tanh_exploration: Optional[int] = 10,
                  use_tanh: Optional[bool] = False,
+                 attention: Optional[str] = "D",
                  device: Optional[str] = "cpu"
                  ):
-
         """
 
         @param embedding_size: Dimension of sequence embedding
@@ -303,7 +326,8 @@ class CombinatorialRL(nn.Module):
             n_glimpses,
             tanh_exploration,
             use_tanh,
-            self.device
+            attention,
+            self.device,
         )
 
     def greedy_sample(
@@ -311,7 +335,6 @@ class CombinatorialRL(nn.Module):
             input_graph: torch.Tensor,
             n_samples: Optional[int] = 100
     ) -> Tuple[torch.Tensor, List]:
-
         """
 
         Samples greedily from optimal policy to find the best solution to the TSP problem,
@@ -326,7 +349,8 @@ class CombinatorialRL(nn.Module):
 
         for _ in range(n_samples):
             input_graph = input_graph.to(self.device)
-            R, action_probs, actions, action_indices = self(input_graph.unsqueeze(0))
+            R, action_probs, actions, action_indices = self(
+                input_graph.unsqueeze(0))
             if R < best_reward:
                 best_reward = R
                 best_action = actions
@@ -341,7 +365,8 @@ class CombinatorialRL(nn.Module):
         @param path: Path name
         @return: None
         """
-        torch.save(self.state_dict(), os.path.join(f"{path}", f"checkpoint-{exp_name}-{epoch}.pth"))
+        torch.save(self.state_dict(), os.path.join(
+            f"{path}", f"checkpoint-{exp_name}-{epoch}.pth"))
 
     def load_weights(self, path: str) -> None:
         """
@@ -365,11 +390,13 @@ class CombinatorialRL(nn.Module):
         actions = []
         inputs = inputs.transpose(1, 2)
         for action_id in action_idxs:
-            actions.append(inputs[torch.tensor([x for x in range(batch_size)], device=self.device), action_id.data, :])
+            actions.append(inputs[torch.tensor(
+                [x for x in range(batch_size)], device=self.device), action_id.data, :])
 
         action_probs = []
         for prob, action_id in zip(probs, action_idxs):
-            action_probs.append(prob[torch.tensor([x for x in range(batch_size)], device=self.device), action_id.data])
+            action_probs.append(prob[torch.tensor(
+                [x for x in range(batch_size)], device=self.device), action_id.data])
 
         R = self.reward(actions, self.device)
 
@@ -426,7 +453,8 @@ class CombinatorialRLModel(BaseModel):
         if episode_number == 0:
             new_critic_ema = loss
         else:
-            new_critic_ema = (critic_ema * self.beta) + ((1. - self.beta) * loss)
+            new_critic_ema = (critic_ema * self.beta) + \
+                ((1. - self.beta) * loss)
 
         advantage = R - new_critic_ema
         actor_loss = compute_actor_objective(

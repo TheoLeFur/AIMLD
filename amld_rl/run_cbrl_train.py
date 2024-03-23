@@ -18,6 +18,7 @@ class ModelConfig:
     beta: float = .9
     max_grad_norm: float = 2
     learning_rate: float = 1e-4
+    attention: str = "D"
 
 
 @dataclass
@@ -64,6 +65,7 @@ if __name__ == '__main__':
         reward=reward,
         tanh_exploration=model_params.tanh_exploration,
         use_tanh=model_params.use_tanh,
+        attention=model_params.attention,
         device=device
     )
 
@@ -86,6 +88,5 @@ if __name__ == '__main__':
         device=device
     )
     tsp_20_train.train()
-    tsp_model.load_weights("checkpoints/checkpoint-4.pth")
     from amld_rl.plots.plotlib import PlotTSPSolution
     PlotTSPSolution.plot_tsp_solution(tsp_model, train_20_dataset)
