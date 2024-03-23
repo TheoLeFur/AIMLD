@@ -357,7 +357,7 @@ class CombinatorialRL(nn.Module):
 
         return R, best_action
 
-    def save_weights(self, epoch: int, path: str, exp_name: str = "1e6DS") -> None:
+    def save_weights(self, epoch: int, path: str, exp_name: str = "5e5DS") -> None:
         """
         Save the weights of model
 
@@ -385,7 +385,7 @@ class CombinatorialRL(nn.Module):
         inputs = inputs.to(self.device)
         batch_size = inputs.size(0)
 
-        probs, action_idxs = self.actor(inputs)
+        probs, action_idxs = # TODO: fill this up
 
         actions = []
         inputs = inputs.transpose(1, 2)
@@ -409,12 +409,10 @@ def compute_actor_objective(
 ) -> torch.Tensor:
     log_probs = 0
     for prob in probs:
-        logprob = torch.log(prob)
-        log_probs += logprob
+        # TODO: Compute log_probs
     log_probs[log_probs < -1000] = 0.
-    objective = advantage * log_probs
 
-    actor_loss = objective.mean()
+    actor_loss = # TODO: Compute actor loss function
     return actor_loss
 
 
@@ -447,7 +445,7 @@ class CombinatorialRLModel(BaseModel):
         inputs = args[0]
         critic_ema = args[1]
 
-        R, probs, actions, actions_idxs = self.combinatorial_rl_net(inputs)
+        R, probs, actions, actions_idxs = # TODO
 
         loss = R.mean()
         if episode_number == 0:
@@ -457,15 +455,11 @@ class CombinatorialRLModel(BaseModel):
                 ((1. - self.beta) * loss)
 
         advantage = R - new_critic_ema
-        actor_loss = compute_actor_objective(
-            advantage=advantage,
-            probs=probs
-        )
-        self.optimizer.zero_grad()
-        actor_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.combinatorial_rl_net.actor.parameters(),
-                                       float(self.max_grad_norm), norm_type=2)
-        self.optimizer.step()
+
+        #######################################################################################
+        # TODO: Write the training step. Clip the gradients according to the clip_grad attribute
+        # Compute actor_loss
+        #######################################################################################
 
         return {
             "loss": loss,
@@ -475,3 +469,4 @@ class CombinatorialRLModel(BaseModel):
 
     def val_step(self, inputs: torch.autograd.Variable):
         return self.combinatorial_rl_net(inputs)
+

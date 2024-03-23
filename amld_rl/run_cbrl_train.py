@@ -6,6 +6,7 @@ from amld_rl.models.combinatorial_rl import CombinatorialRL, CombinatorialRLMode
 from amld_rl.trainer.cbrl_trainer import CombinatorialRLTrainer, reward
 import IPython
 from dataclasses import dataclass
+from amld_rl.plots.plotlib import PlotTSPSolution
 
 
 @dataclass
@@ -23,8 +24,8 @@ class ModelConfig:
 
 @dataclass
 class DatasetConfig:
-    training_samples: int = int(5e5)
-    validation_samples: int = int(2e3)
+    training_samples: int = int(1e6)
+    validation_samples: int = int(1e4)
 
 
 @dataclass
@@ -88,5 +89,4 @@ if __name__ == '__main__':
         device=device
     )
     tsp_20_train.train()
-    from amld_rl.plots.plotlib import PlotTSPSolution
     PlotTSPSolution.plot_tsp_solution(tsp_model, train_20_dataset)

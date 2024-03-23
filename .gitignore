@@ -1,5 +1,5 @@
 *.bin
 *.pyc
 *.pth
-amld_rl.egg_info/
+amld_rl.egg-info/
 
