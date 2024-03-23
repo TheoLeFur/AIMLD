@@ -34,7 +34,7 @@ pip3 install -e .
 We will give a basic implementation of a neural network architecture, trained with Policy Gradients, to solve combinatorial optimization problems. In our case, we will show how the model performs on the Travelling Salesman Problem.
 
 One can see here a sample solution, for a model trained on 500000 random graphs, each having 16 nodes:
-![Sample solution]("png/sample_sol.png")
+![Sample solution](png/sample_sol.png)
 
 
 # Ressources
