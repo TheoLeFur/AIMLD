@@ -103,7 +103,8 @@ class PlotTSPSolution:
         # Plot the points
         plt.scatter(points[0], points[1], color='blue', label='Points')
         # Detach actions from gpu
-        best_actions = list(map(lambda t: t.cpu().detach().numpy(), best_actions))
+        best_actions = list(
+            map(lambda t: t.cpu().detach().numpy(), best_actions))
         # Connect the points with lines
         for i in range(len(best_actions) - 1):
             plt.plot([best_actions[i][0][0], best_actions[i + 1][0][0]],

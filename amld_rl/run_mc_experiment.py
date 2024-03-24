@@ -13,3 +13,4 @@ if __name__ == '__main__':
     trainer = Trainer(model, n_episodes=100000)
     trainer.train()
     PlotLib.plot_value(params["environment"], model.V)
+
