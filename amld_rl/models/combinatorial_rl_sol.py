@@ -202,8 +202,6 @@ class PointerNet(nn.Module):
             attention=attention
         )
 
-        self.softmax = nn.Softmax()
-
         self.decoder_start_input = nn.Parameter(
             torch.FloatTensor(embedding_size)).to(self.device)
         self.decoder_start_input.data.uniform_(
@@ -255,7 +253,8 @@ class PointerNet(nn.Module):
 
         mask: torch.Tensor = torch.zeros(
             batch_size, seq_len, device=self.device).to(torch.bool)
-        
+        mask.requires_grad = False
+
         idxs = None
         decoder_input = self.decoder_start_input.unsqueeze(
             0).repeat(batch_size, 1)
@@ -268,12 +267,13 @@ class PointerNet(nn.Module):
             for _ in range(self.n_glimpses):
                 ref, logits = self.glimpse(query, encoder_outputs)
                 logits, mask = self._mask_logits(logits, mask, idxs)
-                query = torch.bmm(ref, self.softmax(
-                    logits).unsqueeze(2)).squeeze(2)
+                query = torch.bmm(ref, torch.nn.functional.softmax(
+                    logits, dim=1).unsqueeze(2)).squeeze(2)
 
             _, logits = self.pointer(query, encoder_outputs)
             logits, mask = self._mask_logits(logits, mask, idxs)
-            probs: torch.Tensor = self.softmax(logits)
+            probs: torch.Tensor = torch.nn.functional.softmax(
+                logits, dim=1)
 
             idxs = probs.multinomial(1).squeeze(1)
             for old_idxs in prev_idxs:
@@ -348,6 +348,7 @@ class CombinatorialRL(nn.Module):
 
         for _ in range(n_samples):
             input_graph = input_graph.to(self.device)
+            self.eval()
             R, action_probs, actions, action_indices = self(
                 input_graph.unsqueeze(0))
             if R < best_reward:
@@ -356,7 +357,7 @@ class CombinatorialRL(nn.Module):
 
         return R, best_action
 
-    def save_weights(self, epoch: int, path: str, exp_name: str = "5e5DS") -> None:
+    def save_weights(self, epoch: int, path: str, exp_name: str = "1e5DS") -> None:
         """
         Save the weights of model
 
@@ -364,6 +365,9 @@ class CombinatorialRL(nn.Module):
         @param path: Path name
         @return: None
         """
+
+        if not os.path.exists(path):
+            os.makedirs(path)
         torch.save(self.state_dict(), os.path.join(
             f"{path}", f"checkpoint-{exp_name}-{epoch}.pth"))
 
@@ -384,7 +388,7 @@ class CombinatorialRL(nn.Module):
         inputs = inputs.to(self.device)
         batch_size = inputs.size(0)
 
-        probs, action_idxs = # TODO: fill this up
+        probs, action_idxs = self.actor(inputs)
 
         actions = []
         inputs = inputs.transpose(1, 2)
@@ -408,10 +412,12 @@ def compute_actor_objective(
 ) -> torch.Tensor:
     log_probs = 0
     for prob in probs:
-        # TODO: Compute log_probs
+        logprob = torch.log(prob)
+        log_probs += logprob
     log_probs[log_probs < -1000] = 0.
+    objective = advantage * log_probs
 
-    actor_loss = # TODO: Compute actor loss function
+    actor_loss = objective.mean()
     return actor_loss
 
 
@@ -444,21 +450,25 @@ class CombinatorialRLModel(BaseModel):
         inputs = args[0]
         critic_ema = args[1]
 
-        R, probs, actions, actions_idxs = # TODO
+        R, probs, actions, actions_idxs = self.combinatorial_rl_net(inputs)
 
         loss = R.mean()
         if episode_number == 0:
             new_critic_ema = loss
         else:
             new_critic_ema = (critic_ema * self.beta) + \
-                ((1. - self.beta) * loss)
+                             ((1. - self.beta) * loss)
 
         advantage = R - new_critic_ema
-
-        #######################################################################################
-        # TODO: Write the training step. Clip the gradients according to the clip_grad attribute
-        # Compute actor_loss
-        #######################################################################################
+        actor_loss = compute_actor_objective(
+            advantage=advantage,
+            probs=probs
+        )
+        self.optimizer.zero_grad()
+        actor_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.combinatorial_rl_net.actor.parameters(),
+                                       float(self.max_grad_norm), norm_type=2)
+        self.optimizer.step()
 
         return {
             "loss": loss,
@@ -468,4 +478,3 @@ class CombinatorialRLModel(BaseModel):
 
     def val_step(self, inputs: torch.autograd.Variable):
         return self.combinatorial_rl_net(inputs)
-
