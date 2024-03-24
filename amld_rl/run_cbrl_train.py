@@ -17,15 +17,15 @@ class ModelConfig:
     tanh_exploration: int = 10
     use_tanh: bool = True
     beta: float = .9
-    max_grad_norm: float = 2
-    learning_rate: float = 1e-4
-    attention: str = "D"
+    max_grad_norm: float = 2.
+    learning_rate: float = 1e-3
+    attention: str = "BHD"
 
 
 @dataclass
 class DatasetConfig:
-    training_samples: int = int(1e6)
-    validation_samples: int = int(1e4)
+    training_samples: int = int(2.5e5)
+    validation_samples: int = int(1e3)
 
 
 @dataclass

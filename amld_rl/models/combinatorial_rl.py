@@ -202,8 +202,6 @@ class PointerNet(nn.Module):
             attention=attention
         )
 
-        self.softmax = nn.Softmax()
-
         self.decoder_start_input = nn.Parameter(
             torch.FloatTensor(embedding_size)).to(self.device)
         self.decoder_start_input.data.uniform_(
@@ -269,12 +267,13 @@ class PointerNet(nn.Module):
             for _ in range(self.n_glimpses):
                 ref, logits = self.glimpse(query, encoder_outputs)
                 logits, mask = self._mask_logits(logits, mask, idxs)
-                query = torch.bmm(ref, self.softmax(
-                    logits).unsqueeze(2)).squeeze(2)
+                query = torch.bmm(ref, torch.nn.functional.softmax(
+                    logits, dim=1).unsqueeze(2)).squeeze(2)
 
             _, logits = self.pointer(query, encoder_outputs)
             logits, mask = self._mask_logits(logits, mask, idxs)
-            probs: torch.Tensor = self.softmax(logits)
+            probs: torch.Tensor = torch.nn.functional.softmax(
+                logits, dim=1)
 
             idxs = probs.multinomial(1).squeeze(1)
             for old_idxs in prev_idxs:
@@ -357,7 +356,7 @@ class CombinatorialRL(nn.Module):
 
         return R, best_action
 
-    def save_weights(self, epoch: int, path: str, exp_name: str = "1e6DS") -> None:
+    def save_weights(self, epoch: int, path: str, exp_name: str = "25e4DS") -> None:
         """
         Save the weights of model
 

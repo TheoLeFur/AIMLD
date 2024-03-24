@@ -81,9 +81,6 @@ class CombinatorialRLTrainer(BaseTrainer):
 
                 print(f"Loss Value: {loss}\n")
 
-                if batch_id % self.plot_update_period == 0:
-                    # self.plot(epoch)
-                    continue
 
                 if batch_id % self.validation_period == 0:
                     self.model.combinatorial_rl_net.eval()
@@ -98,6 +95,7 @@ class CombinatorialRLTrainer(BaseTrainer):
                 print("STOP!\n")
                 break
             self.model.combinatorial_rl_net.save_weights(epoch, "checkpoints")
+            self.plot(epoch)
             print(f"Epoch {epoch} data saved in directory ckeckpoints \n")
             self.epochs += 1
 
