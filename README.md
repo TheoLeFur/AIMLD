@@ -42,7 +42,7 @@ python3 run_cbrl_train.py
 ```
 
 One can see here a sample solution, for a model trained on 500000 random graphs, each having 16 nodes:
-![Sample solution](png/sample_sol.png)
+![Sample solution](png/sample_sol_1e5DS.png)
 
 # Ressources
 
