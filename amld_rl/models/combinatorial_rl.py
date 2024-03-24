@@ -282,7 +282,7 @@ class PointerNet(nn.Module):
                     break
 
             decoder_input = embedded[[
-                i for i in range(batch_size)], idxs.data, :]
+                                         i for i in range(batch_size)], idxs.data, :]
             prev_probs.append(probs)
             prev_idxs.append(idxs)
 
@@ -356,7 +356,7 @@ class CombinatorialRL(nn.Module):
 
         return R, best_action
 
-    def save_weights(self, epoch: int, path: str, exp_name: str = "25e4DS") -> None:
+    def save_weights(self, epoch: int, path: str, exp_name: str = "1e5DS") -> None:
         """
         Save the weights of model
 
@@ -453,7 +453,7 @@ class CombinatorialRLModel(BaseModel):
             new_critic_ema = loss
         else:
             new_critic_ema = (critic_ema * self.beta) + \
-                ((1. - self.beta) * loss)
+                             ((1. - self.beta) * loss)
 
         advantage = R - new_critic_ema
         actor_loss = compute_actor_objective(

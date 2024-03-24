@@ -20,11 +20,10 @@ conda create -n your_env_name
 Install the dependencies using:
 
 ```
-pip3 install -r requirements.txt
+conda install --file requirements.txt
 ```
 
 Setup the project using
-
 ```
 pip3 install -e .
 ```

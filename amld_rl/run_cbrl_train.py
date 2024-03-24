@@ -24,7 +24,7 @@ class ModelConfig:
 
 @dataclass
 class DatasetConfig:
-    training_samples: int = int(2.5e5)
+    training_samples: int = int(1e5)
     validation_samples: int = int(1e3)
 
 
