@@ -348,6 +348,7 @@ class CombinatorialRL(nn.Module):
 
         for _ in range(n_samples):
             input_graph = input_graph.to(self.device)
+            self.eval()
             R, action_probs, actions, action_indices = self(
                 input_graph.unsqueeze(0))
             if R < best_reward:
