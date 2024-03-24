@@ -282,7 +282,7 @@ class PointerNet(nn.Module):
                     break
 
             decoder_input = embedded[[
-                                         i for i in range(batch_size)], idxs.data, :]
+                i for i in range(batch_size)], idxs.data, :]
             prev_probs.append(probs)
             prev_idxs.append(idxs)
 
@@ -364,6 +364,9 @@ class CombinatorialRL(nn.Module):
         @param path: Path name
         @return: None
         """
+
+        if not os.path.exists(path):
+            os.makedirs(path)
         torch.save(self.state_dict(), os.path.join(
             f"{path}", f"checkpoint-{exp_name}-{epoch}.pth"))
 

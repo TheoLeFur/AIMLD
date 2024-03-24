@@ -23,7 +23,6 @@ class CombinatorialRLTrainer(BaseTrainer):
             plot_update_period: Optional[int] = 50,
             validation_period: Optional[int] = 100
     ) -> None:
-
         """
 
         @param n_epochs:
@@ -48,8 +47,10 @@ class CombinatorialRLTrainer(BaseTrainer):
         self.batch_size = batch_size
         self.threshold = threshold
 
-        self.train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=1)
-        self.val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=1)
+        self.train_loader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True, num_workers=1)
+        self.val_loader = DataLoader(
+            val_dataset, batch_size=batch_size, shuffle=True, num_workers=1)
 
         self.train_tour: List = []
         self.val_tour: List = []
@@ -81,15 +82,16 @@ class CombinatorialRLTrainer(BaseTrainer):
 
                 print(f"Loss Value: {loss}\n")
 
-
                 if batch_id % self.validation_period == 0:
                     self.model.combinatorial_rl_net.eval()
                     for val_batch in self.val_loader:
                         with torch.no_grad():
                             val_batch = val_batch.to(self.device)
                             inputs = Variable(val_batch)
-                            R, probs, actions, actions_idxs = self.model.val_step(inputs)
-                            self.val_tour.append(R.mean().cpu().detach().numpy())
+                            R, probs, actions, actions_idxs = self.model.val_step(
+                                inputs)
+                            self.val_tour.append(
+                                R.mean().cpu().detach().numpy())
 
             if self.threshold and self.train_tour[-1] < self.threshold:
                 print("STOP!\n")
@@ -126,7 +128,8 @@ def reward(sample_solution, device: Optional[str] = "cpu"):
     tour_len = Variable(torch.zeros([batch_size], device=device))
 
     for i in range(n - 1):
-        tour_len += torch.norm(sample_solution[i] - sample_solution[i + 1], dim=1)
+        tour_len += torch.norm(sample_solution[i] -
+                               sample_solution[i + 1], dim=1)
 
     tour_len += torch.norm(sample_solution[n - 1] - sample_solution[0], dim=1)
 

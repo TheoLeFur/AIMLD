@@ -8,7 +8,6 @@ import IPython
 from dataclasses import dataclass
 from amld_rl.plots.plotlib import PlotTSPSolution
 
-
 @dataclass
 class ModelConfig:
     embedding_size: int = 128
@@ -18,7 +17,7 @@ class ModelConfig:
     use_tanh: bool = True
     beta: float = .9
     max_grad_norm: float = 2.
-    learning_rate: float = 1e-3
+    learning_rate: float = 3e-4
     attention: str = "BHD"
 
 
