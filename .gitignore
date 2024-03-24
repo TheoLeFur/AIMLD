@@ -2,5 +2,4 @@
 *.pyc
 *.pth
 amld_rl.egg-info/
-combinatorial_rl_ex.py
 
