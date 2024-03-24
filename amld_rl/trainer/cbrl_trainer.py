@@ -96,7 +96,7 @@ class CombinatorialRLTrainer(BaseTrainer):
             if self.threshold and self.train_tour[-1] < self.threshold:
                 print("STOP!\n")
                 break
-            self.model.combinatorial_rl_net.save_weights(epoch, "checkpoints")
+            # self.model.combinatorial_rl_net.save_weights(epoch, "checkpoints")
             self.plot(epoch)
             print(f"Epoch {epoch} data saved in directory ckeckpoints \n")
             self.epochs += 1
