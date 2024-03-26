@@ -8,6 +8,7 @@ import IPython
 from dataclasses import dataclass
 from amld_rl.plots.plotlib import PlotTSPSolution
 
+
 @dataclass
 class ModelConfig:
     embedding_size: int = 128
