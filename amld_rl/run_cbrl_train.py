@@ -4,7 +4,8 @@ import torch.backends.mps
 import argparse
 
 from amld_rl.data.crl_datagen import TSPDatasetGenerator
-from amld_rl.models.combinatorial_rl import CombinatorialRL, CombinatorialRLModel
+from amld_rl.models.combinatorial_rl import CombinatorialRLModel
+from amld_rl.actors.combinatorial_rl_actor import CombinatorialRLActor
 from amld_rl.plots.plotlib import PlotTSPSolution
 from amld_rl.trainer.cbrl_trainer import CombinatorialRLTrainer, reward
 
@@ -118,7 +119,7 @@ if __name__ == '__main__':
         num_samples=dataset_params.validation_samples
     )
 
-    tsp_model: CombinatorialRL = CombinatorialRL(
+    tsp_model: CombinatorialRLActor = CombinatorialRLActor(
         embedding_size=model_params.embedding_size,
         hidden_dim=model_params.hidden_dim,
         seq_len=tsp_params.num_nodes,

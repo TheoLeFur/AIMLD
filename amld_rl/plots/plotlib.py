@@ -6,7 +6,7 @@ from IPython.display import display, clear_output
 
 from amld_rl.data.crl_datagen import TSPDatasetGenerator
 from typing import List, Optional
-from amld_rl.models.combinatorial_rl import CombinatorialRL
+from amld_rl.actors.combinatorial_rl_actor import CombinatorialRLActor
 import random
 
 
@@ -82,7 +82,7 @@ class PlotTSPSolution:
 
     @staticmethod
     def plot_tsp_solution(
-            model: CombinatorialRL,
+            model: CombinatorialRLActor,
             dataset: TSPDatasetGenerator,
             n_samples=100
     ) -> None:
