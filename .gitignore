@@ -1,5 +1,6 @@
 *.bin
 *.pyc
 *.pth
+amld_rl/.idea/
 amld_rl.egg-info/
 
