@@ -30,7 +30,7 @@ class GraphEmbedding(nn.Module):
 
         self.device: str = device
         self.embedding_size: int = embedding_size
-        self.embedding: nn.Parameter = nn.Parameter(
+        self.embedding: torch.Tensor = nn.Parameter(
             torch.FloatTensor(input_size, embedding_size)).to(self.device)
 
         # Weights initialization
@@ -47,7 +47,7 @@ class GraphEmbedding(nn.Module):
         batch_size: int = inputs.size(0)
         seq_len: int = inputs.size(2)
 
-        embedding: nn.Parameter = self.embedding.repeat(batch_size, 1, 1)
+        embedding: torch.Tensor = self.embedding.repeat(batch_size, 1, 1)
         embedded: List = []
 
         inputs: torch.Tensor = inputs.unsqueeze(1).to(self.device)
@@ -355,17 +355,19 @@ class CombinatorialRL(nn.Module):
                 best_reward = R
                 best_action = actions
 
-        return R, best_action
+        return best_reward, best_action
 
     def save_weights(self, epoch: int, path: str, exp_name: str = "1e5DS") -> None:
         """
-        Save the weights of model
 
-        @param epoch: Epoch number
-        @param path: Path name
-        @return: None
+        Args:
+            epoch: Epoch Number
+            path: Name of path for saving the weights
+            exp_name: Name of the experiment
+
+        Returns: None
+
         """
-
         if not os.path.exists(path):
             os.makedirs(path)
         torch.save(self.state_dict(), os.path.join(
