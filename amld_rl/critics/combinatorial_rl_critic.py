@@ -48,7 +48,12 @@ class CombinatorialRLCritic(nn.Module):
         self.hidden_dim = hidden_dim
         self.n_process_blocks = n_process_blocks
 
-        self.encoder = nn.LSTM(self.embedding_dim, self.hidden_dim)
+        self.encoder = nn.LSTM(
+            self.embedding_dim,
+            self.hidden_dim,
+            batch_first=True
+        )
+
         self.process_block = AttentionModule(
             hidden_dim=hidden_dim,
             use_tanh=use_tanh,
@@ -56,6 +61,7 @@ class CombinatorialRLCritic(nn.Module):
             device=device,
             attention=attention
         )
+
         self.decoder = MLPFactory.build_mlp(
             input_size=hidden_dim,
             hidden_size=hidden_dim,
@@ -64,6 +70,7 @@ class CombinatorialRLCritic(nn.Module):
             activation="relu",
             device=device
         )
+
         self.softmax = nn.Softmax(dim=1)
         self.device = device
 
@@ -71,7 +78,7 @@ class CombinatorialRLCritic(nn.Module):
         """
 
         Args:
-            inputs: tensor of shape [EMBEDDING_DIM, BATCH_SIZE, SEQ_LEN]
+            inputs: tensor of shape [BATCH_SIZE, SEQ_LEN, EMBEDDING_DIM]
 
         Returns: baseline approx.
 
@@ -101,8 +108,7 @@ class CombinatorialRLCritic(nn.Module):
 
             return _t.unsqueeze(0).repeat(_batch_size, 1).unsqueeze(0)
 
-        batch_size: int = inputs.size(1)
-
+        batch_size: int = inputs.size(0)
         enc_init_hidden: torch.Tensor = Variable(
             torch.zeros(self.hidden_dim),
         )
@@ -124,21 +130,16 @@ class CombinatorialRLCritic(nn.Module):
             (enc_init_hidden, enc_init_cell)
         )
 
-        print(encoder_outputs.shape)
-        print(enc_hidden.shape)
-        print(encoder_cell.shape)
-        print(encoder_cell[-1].shape)
+        process_block_state: torch.Tensor = enc_hidden.squeeze(0)
+        for _ in range(self.n_process_blocks):
+            ref, logits = self.process_block(
+                process_block_state,
+                encoder_outputs
+            )
+            process_block_state = torch.bmm(
+                ref,
+                self.softmax(logits).unsqueeze(2)
+            ).squeeze(2)
 
-
-if __name__ == '__main__':
-    comb_rl_critic = CombinatorialRLCritic(
-        hidden_dim=128,
-        embedding_dim=128,
-        n_process_blocks=5
-    )
-
-    batch_size = 32
-    seq_len = 16
-
-    input = torch.randn((batch_size, 128, seq_len))
-    comb_rl_critic(input)
+        baseline_approximation = self.decoder(process_block_state)
+        return baseline_approximation
