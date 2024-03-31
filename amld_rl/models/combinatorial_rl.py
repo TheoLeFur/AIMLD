@@ -4,6 +4,7 @@ import torch
 
 from amld_rl.actors.combinatorial_rl_actor import CombinatorialRLActor
 from amld_rl.models.abstract_model import BaseModel
+from amld_rl.critics.base_critic import BaseCritic
 
 
 def compute_actor_objective(
@@ -26,6 +27,7 @@ class CombinatorialRLModel(BaseModel):
     def __init__(
             self,
             combinatorial_rl_net: CombinatorialRLActor,
+            combinatorial_rl_critic: BaseCritic,
             optimizer: Optional[torch.optim.Optimizer] = None,
             max_grad_norm: Optional[float] = 1,
             learning_rate: Optional[float] = 1e-3,
@@ -33,8 +35,11 @@ class CombinatorialRLModel(BaseModel):
             beta: Optional[float] = .9
     ) -> None:
         self.device = device
+
         self.combinatorial_rl_net = combinatorial_rl_net
+        self.combinatorial_rl_critic = combinatorial_rl_critic
         self.combinatorial_rl_net.to(self.device)
+        self.combinatorial_rl_critic.to(self.device)
 
         if optimizer is None:
             self.optimizer = torch.optim.Adam(self.combinatorial_rl_net.actor.parameters(), lr=learning_rate

@@ -2,17 +2,17 @@ from torch.utils.data import Dataset
 from typing import Optional
 from tqdm import tqdm
 import torch
+from amld_rl.data.base_datagen import BaseDatasetGenerator
 
 
-class TSPDatasetGenerator(Dataset):
+class TSPDatasetGenerator(BaseDatasetGenerator):
 
     def __init__(
             self,
             num_nodes: int,
             num_samples: int,
-            random_seed: Optional[int] = None,
+            random_seed: Optional[int] = None
     ) -> None:
-
         """
         Dataset generator for the Travelling Salesman Problem. We assume that the value
         of the nodes in the graph are normalized to fit in [0,1].
@@ -21,10 +21,7 @@ class TSPDatasetGenerator(Dataset):
         @param num_samples: Number of samples in the dataset
         @param random_seed: Optional seed
         """
-        super().__init__()
-
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
+        super().__init__(random_seed)
 
         self.data_set = []
         for _ in tqdm(range(num_samples)):

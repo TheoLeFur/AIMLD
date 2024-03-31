@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from amld_rl.neural_nets.attention_module import AttentionModule
 from typing import Optional
+from typing import Dict
 from amld_rl.neural_nets.mlp import MLPFactory
 from torch.autograd import Variable
 from amld_rl.critics.base_critic import BaseCritic
@@ -17,7 +18,10 @@ class CombinatorialRLCritic(BaseCritic):
             tanh_exploration: Optional[float] = 10,
             use_tanh: Optional[bool] = False,
             device: Optional[str] = "cpu",
-            attention: Optional[str] = "D"
+            attention: Optional[str] = "D",
+            optimizer: Optional[torch.optim.Optimizer] = None,
+            learning_rate: Optional[float] = 3e-4
+
     ) -> None:
         """
         The critic is composed of:
@@ -72,6 +76,12 @@ class CombinatorialRLCritic(BaseCritic):
             device=device
         )
 
+        if optimizer is None:
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        else:
+            self.optimizer = optimizer
+
+        self.criterion = nn.MSELoss()
         self.softmax = nn.Softmax(dim=1)
         self.device = device
 
@@ -142,3 +152,26 @@ class CombinatorialRLCritic(BaseCritic):
 
         baseline_approximation = self.decoder(process_block_state)
         return baseline_approximation
+
+    def update_critic(self, inputs: torch.Tensor, *args) -> Dict:
+        """
+
+        Args:
+            inputs:
+            *args:
+
+        Returns:
+
+        """
+
+        R: torch.Tensor = args[0]
+        baseline_pred: torch.Tensor = self(inputs)
+
+        self.optimizer.zero_grad()
+        critic_loss: torch.Tensor = self.criterion(baseline_pred, R)
+        critic_loss.backward()
+        self.optimizer.step()
+
+        return {
+            "critic_loss": critic_loss
+        }
