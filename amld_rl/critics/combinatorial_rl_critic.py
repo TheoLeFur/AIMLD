@@ -4,9 +4,10 @@ from amld_rl.neural_nets.attention_module import AttentionModule
 from typing import Optional
 from amld_rl.neural_nets.mlp import MLPFactory
 from torch.autograd import Variable
+from amld_rl.critics.base_critic import BaseCritic
 
 
-class CombinatorialRLCritic(nn.Module):
+class CombinatorialRLCritic(BaseCritic):
 
     def __init__(
             self,

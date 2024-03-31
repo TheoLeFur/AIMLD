@@ -3,11 +3,13 @@ from typing import Callable, Optional, Tuple, List
 import numpy as np
 import torch
 from torch import nn as nn
+import os
 
-from amld_rl.nn.pointer_net import PointerNet
+from amld_rl.neural_nets.pointer_net import PointerNet
+from amld_rl.actors.base_actor import BaseActor
 
 
-class CombinatorialRLActor(nn.Module):
+class CombinatorialRLActor(BaseActor):
     def __init__(self,
                  embedding_size: int,
                  hidden_dim:
@@ -51,7 +53,7 @@ class CombinatorialRLActor(nn.Module):
     def greedy_sample(
             self,
             input_graph: torch.Tensor,
-            n_samples: Optional[int] = 100
+            n_samples: Optional[int] = int(1e4)
     ) -> Tuple[torch.Tensor, List]:
         """
 
@@ -117,7 +119,7 @@ class CombinatorialRLActor(nn.Module):
             actions.append(inputs[torch.tensor(
                 [x for x in range(batch_size)], device=self.device), action_id.data, :])
 
-        action_probs = []
+        action_probs: List = []
         for prob, action_id in zip(probs, action_idxs):
             action_probs.append(prob[torch.tensor(
                 [x for x in range(batch_size)], device=self.device), action_id.data])

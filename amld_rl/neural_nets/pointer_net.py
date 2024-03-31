@@ -5,8 +5,8 @@ import numpy as np
 import torch
 from torch import nn as nn
 
-from amld_rl.nn.attention_module import AttentionModule
-from amld_rl.nn.graph_embedding import GraphEmbedding
+from amld_rl.neural_nets.attention_module import AttentionModule
+from amld_rl.neural_nets.graph_embedding import GraphEmbedding
 
 
 class InvalidSequenceLength(ValueError):
@@ -104,7 +104,7 @@ class PointerNet(nn.Module):
     def forward(self, inputs: torch.Tensor) -> Tuple[List, List]:
         """
         Forward Pass through pointer network
-        @param inputs: tensor of shape [BATCH_SIZE, 1, SEQ_LEN]
+        @param inputs: tensor of shape [BATCH_SIZE, 2, SEQ_LEN]
         @return: Probabilities and action indices
         """
 
@@ -116,7 +116,11 @@ class PointerNet(nn.Module):
                 f"Tensor sequence length : {seq_len} does not match attribute sequence length{self.seq_len}")
 
         embedded: torch.Tensor = self.embedding(inputs)
+        print(embedded.shape)
         encoder_outputs, (hidden, context) = self.encoder(embedded)
+        print(encoder_outputs.shape)
+        print(hidden.shape)
+        print(context.shape)
 
         prev_probs: List = []
         prev_idxs: List = []
@@ -130,7 +134,6 @@ class PointerNet(nn.Module):
             0).repeat(batch_size, 1)
 
         for _ in range(seq_len):
-
             _, (hidden, context) = self.decoder(
                 decoder_input.unsqueeze(1), (hidden, context))
             query = hidden.squeeze(0)
@@ -157,3 +160,20 @@ class PointerNet(nn.Module):
             prev_idxs.append(idxs)
 
         return prev_probs, prev_idxs
+
+
+if __name__ == '__main__':
+    batch_size = 32
+    embedding_dim = 128
+    hidden_dim = 128
+    n_glimpses = 1
+
+    pointer = PointerNet(
+        embedding_size=embedding_dim,
+        hidden_dim=hidden_dim,
+        n_glimpses=n_glimpses,
+        seq_len=16
+    )
+
+    input = torch.randn((32, 2, 16))
+    pointer(input)
