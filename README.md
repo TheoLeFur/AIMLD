@@ -35,10 +35,10 @@ We will give a basic implementation of a neural network architecture, trained wi
 ## Exercice
 
 Fill in the TODOs in <code>combinatorial_rl.py</code>. Then, from the <code>amld_rl</code>, start running
-the training script:
+the training script from the <code>scripts</code> directory:
 
 ```
-python3 run_cbrl_train.py
+/bin/bash run_crbl.sh
 ```
 
 One can see here a sample solution, for a model trained on 500000 random graphs, each having 16 nodes:
