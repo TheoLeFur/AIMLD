@@ -32,11 +32,8 @@ pip3 install -e .
 
 We will give a basic implementation of a neural network architecture, trained with Policy Gradients, to solve combinatorial optimization problems. In our case, we will show how the model performs on the Travelling Salesman Problem, an NP hard problem $\theta(n^2 2^n)$. We will be following the paper shared in the ressources.
 
-## Exercice
-
-Fill in the TODOs in <code>combinatorial_rl.py</code>. Then, from the <code>amld_rl</code>, start running
-the training script from the <code>scripts</code> directory:
-
+## Training
+Run the training script from the <code>scripts</code> directory:
 ```
 /bin/bash run_crbl.sh
 ```
