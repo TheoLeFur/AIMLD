@@ -122,8 +122,6 @@ class CombinatorialRLCritic(nn.Module):
             lambda t: _adjust_init_shape_for_inputs(t, batch_size),
             [enc_init_hidden, enc_init_cell]
         )
-        print(enc_init_hidden.shape)
-        print(enc_init_cell.shape)
 
         encoder_outputs, (enc_hidden, encoder_cell) = self.encoder(
             inputs,
