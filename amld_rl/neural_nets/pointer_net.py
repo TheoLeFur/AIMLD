@@ -116,11 +116,7 @@ class PointerNet(nn.Module):
                 f"Tensor sequence length : {seq_len} does not match attribute sequence length{self.seq_len}")
 
         embedded: torch.Tensor = self.embedding(inputs)
-        print(embedded.shape)
         encoder_outputs, (hidden, context) = self.encoder(embedded)
-        print(encoder_outputs.shape)
-        print(hidden.shape)
-        print(context.shape)
 
         prev_probs: List = []
         prev_idxs: List = []

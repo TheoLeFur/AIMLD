@@ -62,8 +62,6 @@ class CombinatorialRLTrainer(BaseTrainer):
 
     def train(self):
 
-        critic_ema = torch.zeros(1, device=self.device)
-
         for epoch in range(self.n_epochs):
             for batch_id, sample_batch in enumerate(tqdm(self.train_loader)):
 
@@ -73,8 +71,7 @@ class CombinatorialRLTrainer(BaseTrainer):
 
                 training_step_logs = self.model.step(
                     batch_id,
-                    inputs,
-                    critic_ema
+                    inputs
                 )
 
                 loss = training_step_logs["loss"]

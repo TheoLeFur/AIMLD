@@ -11,6 +11,15 @@ def compute_actor_objective(
         advantage: torch.Tensor,
         probs: List
 ) -> torch.Tensor:
+    """
+
+    Args:
+        advantage:
+        probs:
+
+    Returns:
+
+    """
     log_probs = 0
     for prob in probs:
         logprob = torch.log(prob)
@@ -32,8 +41,19 @@ class CombinatorialRLModel(BaseModel):
             max_grad_norm: Optional[float] = 1,
             learning_rate: Optional[float] = 1e-3,
             device: Optional[str] = "cpu",
-            beta: Optional[float] = .9
     ) -> None:
+
+        """
+
+        Args:
+            combinatorial_rl_net:
+            combinatorial_rl_critic:
+            optimizer:
+            max_grad_norm:
+            learning_rate:
+            device:
+            beta:
+        """
         self.device = device
 
         self.combinatorial_rl_net = combinatorial_rl_net
@@ -48,23 +68,38 @@ class CombinatorialRLModel(BaseModel):
             self.optimizer = optimizer
 
         self.max_grad_norm = max_grad_norm
-        self.beta = beta
 
-    def step(self, episode_number: int, *args) -> Dict:
+    def _get_baseline(self, inputs: torch.Tensor, R: torch.Tensor, episode_number: int):
+        """
+
+        Args:
+            inputs: Input Tensor
+            R: Tensor of rewards
+
+        Returns: Prediction for next baseline
+
+        """
+
+        critic_data: Dict = self.combinatorial_rl_critic.update_critic(
+            inputs,
+            R,
+            episode_number
+        )
+        return critic_data["baseline_pred"]
+
+    def step(self, episode_number: int, *args) -> Dict[str, torch.Tensor]:
 
         inputs = args[0]
-        critic_ema = args[1]
-
         R, probs, actions, actions_idxs = self.combinatorial_rl_net(inputs)
 
         loss = R.mean()
-        if episode_number == 0:
-            new_critic_ema = loss
-        else:
-            new_critic_ema = (critic_ema * self.beta) + \
-                             ((1. - self.beta) * loss)
+        baseline_pred = self._get_baseline(
+            inputs=inputs,
+            R=R,
+            episode_number=episode_number
+        )
 
-        advantage = R - new_critic_ema
+        advantage = R - baseline_pred
         actor_loss = compute_actor_objective(
             advantage=advantage,
             probs=probs
@@ -78,7 +113,7 @@ class CombinatorialRLModel(BaseModel):
         return {
             "loss": loss,
             "actor_loss": actor_loss,
-            "new_critic_ema": new_critic_ema
+            "new_critic_ema": baseline_pred
         }
 
     def val_step(self, inputs: torch.autograd.Variable):

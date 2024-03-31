@@ -20,7 +20,7 @@ class CombinatorialRLCritic(BaseCritic):
             device: Optional[str] = "cpu",
             attention: Optional[str] = "D",
             optimizer: Optional[torch.optim.Optimizer] = None,
-            learning_rate: Optional[float] = 3e-4
+            learning_rate: Optional[float] = 1e-3
 
     ) -> None:
         """
@@ -153,12 +153,12 @@ class CombinatorialRLCritic(BaseCritic):
         baseline_approximation = self.decoder(process_block_state)
         return baseline_approximation
 
-    def update_critic(self, inputs: torch.Tensor, *args) -> Dict:
+    def update_critic(self, inputs: torch.Tensor, *args) -> Dict[str, torch.Tensor]:
         """
 
         Args:
             inputs:
-            *args:
+            *args: args[0] contains [L(pi|s), ... , L(pi|s)], where the vector has length BATCH_SIZE
 
         Returns:
 
@@ -166,12 +166,12 @@ class CombinatorialRLCritic(BaseCritic):
 
         R: torch.Tensor = args[0]
         baseline_pred: torch.Tensor = self(inputs)
-
         self.optimizer.zero_grad()
         critic_loss: torch.Tensor = self.criterion(baseline_pred, R)
         critic_loss.backward()
         self.optimizer.step()
 
         return {
+            "baseline_pred": baseline_pred,
             "critic_loss": critic_loss
         }

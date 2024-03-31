@@ -8,6 +8,8 @@ from amld_rl.models.combinatorial_rl import CombinatorialRLModel
 from amld_rl.actors.combinatorial_rl_actor import CombinatorialRLActor
 from amld_rl.plots.plotlib import PlotTSPSolution
 from amld_rl.trainer.cbrl_trainer import CombinatorialRLTrainer, reward
+from amld_rl.critics.ema_critic import EMACritic
+from amld_rl.critics.combinatorial_rl_critic import CombinatorialRLCritic
 
 
 @dataclass
@@ -63,8 +65,12 @@ if __name__ == '__main__':
     parser.add_argument('--use_tanh', action='store_true', help='Use tanh (default: True)')
     parser.add_argument('--beta', type=float, default=0.9, help='Beta value (default: 0.9)')
     parser.add_argument('--max_grad_norm', type=float, default=2.0, help='Maximum gradient norm (default: 2.0)')
-    parser.add_argument('--learning_rate', type=float, default=3e-4, help='Learning rate (default: 3e-4)')
+    parser.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate (default: 3e-4)')
     parser.add_argument('--attention', type=str, default='BHD', help='Attention mechanism (default: "BHD")')
+
+    # Define the critic type
+
+    parser.add_argument('--critic_type', type=str, default='ema', help='Critic type (EMA or NN based) (default: ema)')
 
     # Dataset Configuration parameters
     parser.add_argument('--training_samples', type=int, default=int(1e5),
@@ -92,6 +98,7 @@ if __name__ == '__main__':
         learning_rate=args.learning_rate,
         attention=args.attention
     )
+
     print(f"Start training model with parameters: \n {model_params}")
 
     dataset_params: DatasetConfig = DatasetConfig(
@@ -131,11 +138,31 @@ if __name__ == '__main__':
         device=device
     )
 
+    if args.critic_type == "ema":
+        tsp_critic: EMACritic = EMACritic(
+            beta=model_params.beta,
+            device=device
+        )
+    elif args.critic_type == "pointer":
+        tsp_critic: CombinatorialRLCritic = CombinatorialRLCritic(
+            embedding_dim=model_params.embedding_size,
+            hidden_dim=model_params.hidden_dim,
+            n_process_blocks=tsp_params.num_nodes,
+            tanh_exploration=model_params.tanh_exploration,
+            use_tanh=model_params.use_tanh,
+            device=device,
+            attention=model_params.attention
+        )
+    else:
+        raise NotImplementedError(f"Critic type {args.critic_type} not implemented")
+
+    tsp_critic.to(device)
+
     model = CombinatorialRLModel(
         combinatorial_rl_net=tsp_model,
+        combinatorial_rl_critic=tsp_critic,
         max_grad_norm=model_params.max_grad_norm,
         learning_rate=model_params.learning_rate,
-        beta=model_params.beta,
         device=device
     )
 
@@ -152,5 +179,5 @@ if __name__ == '__main__':
         device=device
     )
 
-    # tsp_20_train.train()
+    tsp_20_train.train()
     PlotTSPSolution.plot_tsp_solution(tsp_model, train_20_dataset)

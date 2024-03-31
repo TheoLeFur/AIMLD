@@ -10,6 +10,7 @@ beta=0.9
 max_grad_norm=2.0
 learning_rate=3e-4
 attention="BHD"
+critic_type="pointer"
 training_samples=100000
 validation_samples=1000
 n_epochs=5
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
         --max_grad_norm) max_grad_norm="$2"; shift 2;;
         --learning_rate) learning_rate="$2"; shift 2;;
         --attention) attention="$2"; shift 2;;
+        --critic_type) critic_type="$2"; shift 2;;
         --training_samples) training_samples="$2"; shift 2;;
         --validation_samples) validation_samples="$2"; shift 2;;
         --n_epochs) n_epochs="$2"; shift 2;;
@@ -46,6 +48,7 @@ python ../run_cbrl_train.py \
     --max_grad_norm "$max_grad_norm" \
     --learning_rate "$learning_rate" \
     --attention "$attention" \
+    --critic_type "$critic_type" \
     --training_samples "$training_samples" \
     --validation_samples "$validation_samples" \
     --n_epochs "$n_epochs" \
