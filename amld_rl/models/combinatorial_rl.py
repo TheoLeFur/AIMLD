@@ -27,7 +27,7 @@ def compute_actor_objective(
     log_probs[log_probs < -1000] = 0.
     objective = advantage * log_probs
 
-    actor_loss = objective.mean()
+    actor_loss = objective.mean().detach().clone().requires_grad_(True)
     return actor_loss
 
 
@@ -85,7 +85,7 @@ class CombinatorialRLModel(BaseModel):
             R,
             episode_number
         )
-        return critic_data["baseline_pred"]
+        return critic_data
 
     def step(self, episode_number: int, *args) -> Dict[str, torch.Tensor]:
 
@@ -93,17 +93,19 @@ class CombinatorialRLModel(BaseModel):
         R, probs, actions, actions_idxs = self.combinatorial_rl_net(inputs)
 
         loss = R.mean()
-        baseline_pred = self._get_baseline(
+        critic_data = self._get_baseline(
             inputs=inputs,
             R=R,
             episode_number=episode_number
         )
+        baseline_pred = critic_data["baseline_pred"]
 
         advantage = R - baseline_pred
         actor_loss = compute_actor_objective(
             advantage=advantage,
             probs=probs
         )
+
         self.optimizer.zero_grad()
         actor_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.combinatorial_rl_net.actor.parameters(),
@@ -113,7 +115,8 @@ class CombinatorialRLModel(BaseModel):
         return {
             "loss": loss,
             "actor_loss": actor_loss,
-            "new_critic_ema": baseline_pred
+            "new_critic_ema": baseline_pred,
+            "critic_loss": critic_data["critic_loss"]
         }
 
     def val_step(self, inputs: torch.autograd.Variable):

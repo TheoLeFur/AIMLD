@@ -6,6 +6,7 @@ from typing import Dict
 from amld_rl.neural_nets.mlp import MLPFactory
 from torch.autograd import Variable
 from amld_rl.critics.base_critic import BaseCritic
+from amld_rl.neural_nets.graph_embedding import GraphEmbedding
 
 
 class CombinatorialRLCritic(BaseCritic):
@@ -76,6 +77,12 @@ class CombinatorialRLCritic(BaseCritic):
             device=device
         )
 
+        self.embedding = GraphEmbedding(
+            input_size=2,
+            embedding_size=embedding_dim,
+            device=device
+        )
+
         if optimizer is None:
             self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         else:
@@ -119,6 +126,8 @@ class CombinatorialRLCritic(BaseCritic):
 
             return _t.unsqueeze(0).repeat(_batch_size, 1).unsqueeze(0)
 
+        inputs = self.embedding(inputs)
+
         batch_size: int = inputs.size(0)
         enc_init_hidden: torch.Tensor = Variable(
             torch.zeros(self.hidden_dim),
@@ -150,7 +159,7 @@ class CombinatorialRLCritic(BaseCritic):
                 self.softmax(logits).unsqueeze(2)
             ).squeeze(2)
 
-        baseline_approximation = self.decoder(process_block_state)
+        baseline_approximation = self.decoder(process_block_state).squeeze()
         return baseline_approximation
 
     def update_critic(self, inputs: torch.Tensor, *args) -> Dict[str, torch.Tensor]:
@@ -164,12 +173,18 @@ class CombinatorialRLCritic(BaseCritic):
 
         """
 
-        R: torch.Tensor = args[0]
+        # Copy tthe tensors, so that we do not share the same computational graph with the model
+
+        torch.autograd.set_detect_anomaly(True)
+        R: torch.Tensor = args[0].detach().clone().to(self.device)
+        inputs = inputs.detach().clone().to(self.device)
+
         baseline_pred: torch.Tensor = self(inputs)
         self.optimizer.zero_grad()
         critic_loss: torch.Tensor = self.criterion(baseline_pred, R)
-        critic_loss.backward()
-        self.optimizer.step()
+        critic_loss.backward(retain_graph=True)
+        with torch.no_grad():
+            self.optimizer.step()
 
         return {
             "baseline_pred": baseline_pred,

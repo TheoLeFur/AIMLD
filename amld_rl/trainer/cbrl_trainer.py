@@ -74,10 +74,13 @@ class CombinatorialRLTrainer(BaseTrainer):
                     inputs
                 )
 
-                loss = training_step_logs["loss"]
-                self.train_tour.append(loss.cpu().detach().numpy())
+                agent_loss = training_step_logs["loss"]
+                critic_loss = training_step_logs["critic_loss"]
 
-                print(f"Loss Value: {loss}\n")
+                self.train_tour.append(agent_loss.cpu().detach().numpy())
+
+                print(f"Agent Loss Value: {agent_loss}\n")
+                print(f"Critic Loss Value: {critic_loss}\n")
 
                 if batch_id % self.validation_period == 0:
                     self.model.combinatorial_rl_net.eval()
