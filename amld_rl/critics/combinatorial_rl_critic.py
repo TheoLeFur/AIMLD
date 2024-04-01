@@ -175,14 +175,13 @@ class CombinatorialRLCritic(BaseCritic):
 
         # Copy tthe tensors, so that we do not share the same computational graph with the model
 
-        torch.autograd.set_detect_anomaly(True)
         R: torch.Tensor = args[0].detach().clone().to(self.device)
         inputs = inputs.detach().clone().to(self.device)
 
         baseline_pred: torch.Tensor = self(inputs)
         self.optimizer.zero_grad()
         critic_loss: torch.Tensor = self.criterion(baseline_pred, R)
-        critic_loss.backward(retain_graph=True)
+        critic_loss.backward()
         with torch.no_grad():
             self.optimizer.step()
 

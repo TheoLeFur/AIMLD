@@ -89,19 +89,19 @@ class CombinatorialRLModel(BaseModel):
 
     def step(self, episode_number: int, *args) -> Dict[str, torch.Tensor]:
 
-        inputs = args[0]
+        inputs: torch.Tensor = args[0]
         R, probs, actions, actions_idxs = self.combinatorial_rl_net(inputs)
 
-        loss = R.mean()
-        critic_data = self._get_baseline(
+        loss: torch.Tensor = R.mean()
+        critic_data: Dict[str, torch.Tensor] = self._get_baseline(
             inputs=inputs,
             R=R,
             episode_number=episode_number
         )
-        baseline_pred = critic_data["baseline_pred"]
+        baseline_pred: torch.Tensor = critic_data["baseline_pred"]
 
-        advantage = R - baseline_pred
-        actor_loss = compute_actor_objective(
+        advantage: torch.Tensor = R - baseline_pred
+        actor_loss: torch.Tensor = compute_actor_objective(
             advantage=advantage,
             probs=probs
         )
@@ -110,7 +110,8 @@ class CombinatorialRLModel(BaseModel):
         actor_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.combinatorial_rl_net.actor.parameters(),
                                        float(self.max_grad_norm), norm_type=2)
-        self.optimizer.step()
+        with torch.no_grad():
+            self.optimizer.step()
 
         return {
             "loss": loss,
@@ -119,5 +120,5 @@ class CombinatorialRLModel(BaseModel):
             "critic_loss": critic_data["critic_loss"]
         }
 
-    def val_step(self, inputs: torch.autograd.Variable):
+    def val_step(self, inputs: torch.Tensor):
         return self.combinatorial_rl_net(inputs)
